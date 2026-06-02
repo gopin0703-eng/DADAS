@@ -12,7 +12,7 @@
 
 <div align="center">
 
-**<<Deemanth>>**, Dept of Computer Science, USN &nbsp;·&nbsp; **<<Gopinath G>>**, Dept of Computer Applications, USN &nbsp;·&nbsp;**<<Yashvanth S Nayak>>**, Dept of Computer Applications, USN &nbsp;·&nbsp; **<<Franklin Rohith>>**, Dept of Computer Applications, USN &nbsp;·&nbsp; 
+**<<>>**Deemanth, Dept of Computer Science, USN &nbsp;·&nbsp; **<<>>**Gopinath G, Dept of Computer Applications, USN &nbsp;·&nbsp;**<<>>**Yashvanth S Nayak, Dept of Computer Applications, USN &nbsp;·&nbsp; **<<>>**Franklin Rohith F, Dept of Computer Applications, USN &nbsp;·&nbsp; 
 
 </div>
 
