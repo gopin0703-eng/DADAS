@@ -186,6 +186,7 @@ Training Loss	0.0012
 Validation Loss	0.0015
 Epochs	80 (early stop)
 Figure 2: Training and Validation Loss (MPU6050 data)
+
 7.2 Anomaly Detection Results
 Class	Precision	Recall	F1-Score	False Positives
 Normal Operations	0.98	0.99	0.98	1.2%
@@ -193,16 +194,19 @@ Shaking	0.97	0.96	0.96	-
 Forced Opening	0.95	0.94	0.94	-
 Impact	0.99	0.98	0.98	-
 Average	0.97	0.97	0.97	<2%
+
 Table 2: Classification Performance (MPU6050 + Autoencoder)
 Confusion Matrix:
 Predicted	Normal	Anomaly
 Actual Normal	9800	200
 Actual Anomaly	150	9850
 Figure 3: Confusion Matrix
+
 7.3 Edge Deployment Results
 •	Inference Time: ~40 ms per window (Raspberry Pi 4).
 •	Memory Usage: <50 MB (ONNX model + Python runtime).
 •	Power Consumption: <1 W (suitable for battery-powered setups).
+
 7.4 Comparison with Baseline Methods
 Method	Accuracy	False Positives	Latency	Hardware Cost
 Threshold Based (Raw Accel) 	85%	15%	10ms	Low
