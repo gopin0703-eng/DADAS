@@ -78,76 +78,168 @@ The specific objectives of this research are:
 
 ## 5. Methodology
 
-5.1 System Architecture
-The proposed system consists of:
-1.	Sensor Layer: MPU6050 (3-axis accelerometer + gyroscope) mounted on the cash drawer.
-2.	Edge Processing Layer: Raspberry Pi 4 running: 
-  •	Data Acquisition: Multi-threaded Python script with hardware interrupts for 50 Hz sampling from the MPU6050.
-  •	Preprocessing: Gravity subtraction, noise filtering.
-  •	Feature Extraction: Sliding-window FFT (2-second windows, 50% overlap).
-  •	Anomaly Detection: Autoencoder trained on normal operation data.
-3.	Alert Layer: Local buzzer + IoT notification (MQTT/HTTP to a central server).
-5.2 Data Collection
-  •	Hardware: MPU6050 (I2C interface, 50 Hz sampling).
-  •	Normal Data: 10+ hours of cash drawer operations (opening/closing, idle).
-  •	Tampering Data: Simulated attacks (shaking, prying, forced opening).
-  •	Dataset Size: 100,000+ samples (45–55 Hz, <5 ms jitter).
+# 5.1 System Architecture
 
-Class	Samples	Description
-Normal Operation	80,000	Authorized opening/closing, idle
-Shaking	10,000	Manual shaking (tampering attempt)
-Forced Opening	5,000	Prying with tools
-Impact	5,000	Sudden hits (e.g., hammer strikes)
-Table 1: Dataset Distribution (MPU6050 only)
-5.3 Preprocessing
-1.	Gravity Subtraction: 
-  •	Compute accel_net_g = sqrt(ax² + ay² + az²)  - 9.81 (to remove static gravity from MPU6050 data).
-2.	Gyroscope Magnitude: 
-  •	Compute gyro_mag_dps = sqrt(gx² + gy² + gz²) from MPU6050 gyroscope data.
-3.	Noise Filtering: 
-  •	Apply a low-pass filter (5 Hz cutoff) to remove high-frequency noise from MPU6050 readings.
-5.4 Feature Extraction
-  • Sliding Window FFT: 
-  •	Window size: 100 samples (2 sec @ 50 Hz) from MPU6050.
-  •	Overlap: 50% (for smooth transitions).
-  •	Hann window applied before FFT to reduce spectral leakage.
-  •	Features: Magnitude bins (0–25 Hz) for accel_net_g and gyro_mag_dps from MPU6050.
-5.5 Anomaly Detection Model
-5.5.1 Autoencoder Architecture
-•	Input: 25-dimensional FFT features (from accel_net_g and gyro_mag_dps of MPU6050).
-•	Encoder: 
-  >	Dense (25 → 16 → 8) with ReLU activation.
-•	Bottleneck: 8 neurons (compressed representation).
-•	Decoder: 
-  >	Dense (8 → 16 → 25) with ReLU activation.
-•	Loss Function: Mean Squared Error (MSE).
-•	Optimizer: Adam (lr=0.001).
-Training:
-•	Input: Only normal operation data (unsupervised learning from MPU6050).
-•	Epochs: 100 (early stopping if validation loss plateaus).
-•	Batch Size: 32.
-5.5.2 Anomaly Score
-•	Reconstruction Error (RE): 
+The proposed system consists of the following layers:
+
+### Sensor Layer
+
+* MPU6050 (3-axis accelerometer + gyroscope) mounted on the cash drawer.
+
+### Edge Processing Layer
+
+* Raspberry Pi 4 running:
+
+  * **Data Acquisition:** Multi-threaded Python script with hardware interrupts for 50 Hz sampling from the MPU6050.
+  * **Preprocessing:** Gravity subtraction and noise filtering.
+  * **Feature Extraction:** Sliding-window FFT (2-second windows with 50% overlap).
+  * **Anomaly Detection:** Autoencoder trained on normal operation data.
+
+### Alert Layer
+
+* Local buzzer for immediate alerts.
+* IoT notification using MQTT/HTTP communication to a central server.
+
+# 5.2 Data Collection
+
+### Hardware
+
+* MPU6050 connected through the I2C interface.
+* Sampling rate: 50 Hz.
+
+### Data Collection Categories
+
+| Class            | Samples | Description                                  |
+| ---------------- | ------: | -------------------------------------------- |
+| Normal Operation |  80,000 | Authorized opening, closing, and idle states |
+| Shaking          |  10,000 | Manual shaking attempts                      |
+| Forced Opening   |   5,000 | Prying with tools                            |
+| Impact           |   5,000 | Sudden hits such as hammer strikes           |
+
+**Table 1: Dataset Distribution (MPU6050 Only)**
+
+### Dataset Summary
+
+* Normal Data: More than 10 hours of cash drawer operations including opening, closing, and idle conditions.
+* Tampering Data: Simulated attacks including shaking, prying, forced opening, and impact events.
+* Total Dataset Size: More than 100,000 samples collected at 45–55 Hz with less than 5 ms jitter.
+
+# 5.3 Preprocessing
+
+### Gravity Subtraction
+
+Compute:
+
+accel_net_g = √(ax² + ay² + az²) − 9.81
+
+This removes the static gravitational component from MPU6050 accelerometer readings.
+
+### Gyroscope Magnitude
+
+Compute:
+
+gyro_mag_dps = √(gx² + gy² + gz²)
+
+This represents the overall angular velocity magnitude from the gyroscope.
+
+### Noise Filtering
+
+* Apply a low-pass filter with a 5 Hz cutoff frequency.
+* Remove high-frequency noise from MPU6050 readings.
+
+# 5.4 Feature Extraction
+
+### Sliding Window FFT
+
+* Window Size: 100 samples (2 seconds at 50 Hz).
+* Overlap: 50%.
+* Hann window applied before FFT to reduce spectral leakage.
+
+### Extracted Features
+
+* FFT magnitude bins (0–25 Hz) from accel_net_g.
+* FFT magnitude bins (0–25 Hz) from gyro_mag_dps.
+* Combined feature vector used as input to the anomaly detection model.
+
+# 5.5 Anomaly Detection Model
+
+## 5.5.1 Autoencoder Architecture
+
+### Input Layer
+
+* 50-dimensional FFT feature vector.
+
+### Encoder
+
+* Dense Layer: 50 → 16 (ReLU)
+* Dense Layer: 16 → 8 (ReLU)
+
+### Bottleneck Layer
+
+* 8 neurons representing the compressed feature space.
+
+### Decoder
+
+* Dense Layer: 8 → 16 (ReLU)
+* Dense Layer: 16 → 50 (ReLU)
+
+### Training Configuration
+
+* Loss Function: Mean Squared Error (MSE)
+* Optimizer: Adam (Learning Rate = 0.001)
+* Epochs: 100 with early stopping
+* Batch Size: 32
+
+### Training Strategy
+
+* Train only on normal operation data.
+* Learn normal behavioral patterns of the cash drawer.
+* Detect deviations as anomalies.
+
+## 5.5.2 Anomaly Score
+
+### Reconstruction Error (RE)
+
 RE = MSE(original_input, reconstructed_output)
-•	Threshold: 
-  >	Set at 95th percentile of RE on validation data from MPU6050.
-  >	If RE > threshold → Anomaly Detected.
-5.6 Edge Deployment
-•	Model Export: Trained autoencoder converted to ONNX format for edge deployment on Raspberry Pi.
-•	Inference Pipeline: 
-1.	Read 100-sample window from MPU6050.
-2.	Preprocess (gravity subtraction, filtering).
-3.	Compute FFT features.
-4.	Run autoencoder inference.
-5.	Compare RE with threshold.
-6.	Trigger alert if anomaly detected.
-•	Latency: <50 ms per window (real-time on Raspberry Pi).
 
-5.7 Alert System
-•	Local Alert: Buzzer + LED (immediate feedback).
-•	Remote Alert: 
-  >	MQTT/HTTP POST to a central server.
-  >	Mobile Notification (via Firebase/Telegram bot).
+### Threshold Selection
+
+* Threshold set at the 95th percentile of reconstruction errors on validation data.
+* If RE > Threshold → Anomaly Detected.
+
+# 5.6 Edge Deployment
+
+### Model Export
+
+* Trained autoencoder converted to ONNX format for deployment on Raspberry Pi.
+
+### Inference Pipeline
+
+1. Read a 100-sample window from MPU6050.
+2. Perform gravity subtraction and noise filtering.
+3. Compute FFT features.
+4. Run autoencoder inference.
+5. Calculate reconstruction error.
+6. Compare reconstruction error with threshold.
+7. Trigger alert if an anomaly is detected.
+
+### Performance
+
+* Inference latency less than 50 ms per window.
+* Real-time execution on Raspberry Pi 4.
+
+# 5.7 Alert System
+
+### Local Alert
+
+* Buzzer activation.
+* LED indication.
+
+### Remote Alert
+
+* MQTT or HTTP POST request to a central server.
+* Mobile notification through Firebase Cloud Messaging (FCM) or a Telegram bot.
+
 
 
 ## 6. Implementation
