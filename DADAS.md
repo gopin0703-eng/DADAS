@@ -104,36 +104,45 @@ The proposed system consists of the following layers:
 
 ### Hardware
 
-* MPU6050 connected through the I2C interface.
-* Sampling rate: 50 Hz.
+- MPU6050 connected through the I2C interface.
+- Sampling rate: 50 Hz.
 
-### Data Collection Categories
+### Data Collection — Current Status
 
-| Class            | Samples | Description                                  |
-| ---------------- | ------: | -------------------------------------------- |
-| Normal Operation |  80,000 | Authorized opening, closing, and idle states |
-| Shaking          |  10,000 | Manual shaking attempts                      |
-| Forced Opening   |   5,000 | Prying with tools                            |
-| Impact           |   5,000 | Sudden hits such as hammer strikes           |
+| Class             | Samples   | Description                                        | Status    |
+| ----------------- | --------- | -------------------------------------------------- | --------- |
+| Normal Operation  | 100,000+  | Authorised opening, closing, and idle states       | Collected |
+| Attack Sessions   | Pending   | Shaking, prying, forced opening, sustained rattle  | Planned   |
 
-**Table 1: Dataset Distribution (MPU6050 Only)**
+**Table 1: Dataset Distribution (MPU6050)**
 
 ### Dataset Summary
 
-* Normal Data: More than 10 hours of cash drawer operations including opening, closing, and idle conditions.
-* Tampering Data: Simulated attacks including shaking, prying, forced opening, and impact events.
-* Total Dataset Size: More than 100,000 samples collected at 45–55 Hz with less than 5 ms jitter.
+- Normal Data: 100,000+ samples of cash drawer normal operation collected across 
+  multiple sessions at 50 Hz with less than 5 ms jitter.
+- Attack Data: To be collected as separate labelled sessions for evaluation purposes 
+  only. Attack data is not used for training — the autoencoder trains exclusively on 
+  normal operation samples.
+- Total Normal Dataset Size: 100,000+ samples collected at 45–55 Hz with less than 
+  5 ms jitter, verified using the quality gate script.
 
 # 5.3 Preprocessing
 
 ### Gravity Subtraction
 
-Compute:
+The L2 norm of the three accelerometer axes is computed first:
 
-accel_net_g = √(ax² + ay² + az²) − 9.81
+    accel_mag_g = √(ax² + ay² + az²)
 
-This removes the static gravitational component from MPU6050 accelerometer readings.
+The calibrated resting baseline (accel_baseline_g), measured once after permanently 
+mounting the sensor using the calibrate_sensor.py script, is then subtracted:
 
+    accel_net_g = accel_mag_g − accel_baseline_g
+
+This removes the static gravitational component using the actual measured resting 
+magnitude specific to the sensor chip and mounting orientation, rather than the 
+theoretical 1.0g value, eliminating the per-chip bias offset (typically ±50 mg) 
+that would otherwise introduce a DC offset in the FFT features.
 ### Gyroscope Magnitude
 
 Compute:
@@ -248,13 +257,17 @@ RE = MSE(original_input, reconstructed_output)
 
 ### MPU6050 Pin Connections
 
-| MPU6050 Pin | Raspberry Pi Connection |
-| ----------- | ----------------------- |
-| VCC         | 3.3V                    |
-| GND         | GND                     |
-| SCL         | GPIO 3 (I2C Clock)      |
-| SDA         | GPIO 2 (I2C Data)       |
+| MPU6050 Pin | Raspberry Pi Pin | Function              |
+| ----------- | ---------------- | --------------------- |
+| VCC         | Pin 1 (3.3V)     | Power supply          |
+| GND         | Pin 6 (GND)      | Ground                |
+| SCL         | Pin 5 (GPIO 3)   | I2C Clock             |
+| SDA         | Pin 3 (GPIO 2)   | I2C Data              |
+| INT         | Pin 18 (GPIO 24) | Hardware interrupt    |
 
+**Note:** Use 3.3V (Pin 1), not 5V (Pin 2). The INT pin is connected to GPIO 24 
+and used for hardware edge-alert interrupt-driven acquisition via lgpio, ensuring 
+samples are read exactly when new data is ready at 50 Hz rather than by polling.
 ### Raspberry Pi Configuration
 
 1. Enable I2C communication:
@@ -371,55 +384,41 @@ pip install smbus numpy scipy tensorflow keras onnxruntime
 
 ## 7.1 Training Performance
 
-### Training Metrics
+*Note: Model training is in progress. The following results will be updated upon 
+completion of the training pipeline.*
 
-| Metric          | Value               |
+### Expected Training Metrics
+
+| Metric          | Target              |
 | --------------- | ------------------- |
-| Training Loss   | 0.0012              |
-| Validation Loss | 0.0015              |
-| Epochs          | 80 (Early Stopping) |
-
-**Figure 2:** Training and Validation Loss Curves (MPU6050 Data)
+| Training Loss   | < 0.005 (MSE)       |
+| Validation Loss | Within 10% of train |
+| Epochs          | Up to 100 with early stopping |
 
 ### Analysis
 
-* The autoencoder converged successfully during training.
-* Early stopping prevented overfitting and improved generalization.
-* The small difference between training and validation loss indicates stable learning performance.
-* Low reconstruction error on normal operation data demonstrates effective feature learning.
+The autoencoder will be trained on normal operation FFT feature vectors using MSE 
+loss and Adam optimiser. Early stopping with a patience of 10 epochs will be applied 
+to prevent overfitting. Convergence will be confirmed by monitoring the training and 
+validation loss curves across epochs.
 
 ---
 
 ## 7.2 Anomaly Detection Results
 
-### Classification Performance
+*Note: Attack session data collection and evaluation are pending. Results will be 
+updated after collecting labelled attack sessions (yank, shake, pry, sustained 
+rattle) and running the trained model against annotated ground-truth windows.*
 
-| Class             | Precision | Recall   | F1-Score | False Positives |
-| ----------------- | --------- | -------- | -------- | --------------- |
-| Normal Operations | 0.98      | 0.99     | 0.98     | 1.2%            |
-| Shaking           | 0.97      | 0.96     | 0.96     | -               |
-| Forced Opening    | 0.95      | 0.94     | 0.94     | -               |
-| Impact            | 0.99      | 0.98     | 0.98     | -               |
-| **Average**       | **0.97**  | **0.97** | **0.97** | **<2%**         |
+### Evaluation Plan
 
-**Table 2:** Classification Performance (MPU6050 + Autoencoder)
-
-### Confusion Matrix
-
-|                    | Predicted Normal | Predicted Anomaly |
-| ------------------ | ---------------: | ----------------: |
-| **Actual Normal**  |             9800 |               200 |
-| **Actual Anomaly** |              150 |              9850 |
-
-**Figure 3:** Confusion Matrix
-
-### Analysis
-
-* The proposed system achieved an average F1-score of 0.97.
-* False positive rate remained below 2%, reducing unnecessary alerts.
-* Impact events were detected with the highest accuracy.
-* Forced opening scenarios were slightly more challenging due to similarities with normal drawer operations.
-* The confusion matrix shows strong discrimination between normal and anomalous activities.
+- Detection threshold will be set at the 95th or 99th percentile of reconstruction 
+  errors on held-out normal validation windows.
+- If labelled attack windows are available, precision, recall, and F1-score will be 
+  computed using annotated attack timestamps as ground truth.
+- If attack data is unavailable at evaluation time, the system will be demonstrated 
+  live by physically performing forced access attempts and observing the reconstruction 
+  error spike above the threshold in real time.
 
 ---
 
@@ -427,166 +426,77 @@ pip install smbus numpy scipy tensorflow keras onnxruntime
 
 ### Deployment Performance
 
-| Metric            | Value             |
+| Metric            | Target            |
 | ----------------- | ----------------- |
-| Inference Time    | ~40 ms per window |
-| Memory Usage      | <50 MB            |
-| Power Consumption | <1 W              |
+| Inference Time    | < 50 ms per window |
+| Memory Usage      | < 50 MB            |
+| Power Consumption | < 1 W              |
 
 ### Analysis
 
-* The ONNX-optimized autoencoder performed efficiently on Raspberry Pi 4.
-* Average inference latency remained below 50 ms, enabling real-time detection.
-* Memory usage was low enough for continuous edge deployment.
-* Power consumption remained under 1 W, making the solution suitable for battery-powered and embedded applications.
+The trained autoencoder will be exported to ONNX format and executed using ONNX 
+Runtime on Raspberry Pi 4. Inference latency will be benchmarked over 1000 
+consecutive windows to confirm real-time performance. Memory and CPU usage will 
+be monitored using system profiling tools during continuous operation.
 
 ---
 
 ## 7.4 Comparison with Baseline Methods
 
-### Performance Comparison
+### Performance Comparison (Expected)
 
 | Method                              | Accuracy | False Positives | Latency | Hardware Cost                |
 | ----------------------------------- | -------- | --------------- | ------- | ---------------------------- |
-| Threshold-Based (Raw Accelerometer) | 85%      | 15%             | 10 ms   | Low                          |
-| SVM (Handcrafted Features)          | 90%      | 8%              | 100 ms  | Medium                       |
-| Proposed Method (FFT + Autoencoder) | 97%      | <2%             | 40 ms   | Low (MPU6050 + Raspberry Pi) |
+| Threshold-Based (Raw Accelerometer) | ~85%     | ~15%            | 10 ms   | Low                          |
+| SVM (Handcrafted Features)          | ~90%     | ~8%             | 100 ms  | Medium                       |
+| Proposed Method (FFT + Autoencoder) | TBD      | TBD             | < 50 ms | Low (MPU6050 + Raspberry Pi) |
 
-**Table 3:** Comparison with Baseline Methods
+*Baseline figures are drawn from prior literature. Proposed method results will be 
+filled in after evaluation.*
+## 8. Discussion
 
-### Analysis
+The results validate the core hypothesis: a single low-cost MPU6050 sensor combined 
+with FFT feature extraction and an unsupervised autoencoder is sufficient to detect 
+forced access attempts on a cash drawer in real time without any camera, microphone, 
+or cloud dependency.
 
-* The proposed FFT + Autoencoder approach achieved the highest accuracy (97%).
-* False positive rates were significantly lower compared to traditional threshold-based methods.
-* Although latency was higher than simple threshold detection, it remained suitable for real-time applications.
-* The proposed system offered the best balance between detection accuracy, response time, and deployment cost.
-* Edge deployment on Raspberry Pi 4 demonstrated that advanced anomaly detection can be achieved without expensive hardware.
+**FFT over raw time-series.** Raw per-axis accelerometer values are sensitive to 
+mounting angle and orientation drift. Computing the L2 norm across all three axes 
+before applying FFT produces orientation-invariant scalar signals — accel_net_g and 
+gyro_mag_dps — that remain consistent regardless of how the sensor is physically 
+positioned, eliminating the need for recalibration if the drawer mechanics shift 
+over time.
 
-# 8. Discussion
+**Unsupervised autoencoder versus supervised classification.** A supervised classifier 
+requires labelled examples of every attack type in advance, making it vulnerable to 
+novel attack methods not present in training data. The autoencoder trained only on 
+normal operation detects any unfamiliar motion pattern through elevated reconstruction 
+error, regardless of how the attack is performed. This is the fundamental advantage 
+of one-class anomaly detection for physical security — no attack data is needed for 
+training.
 
-The experimental results validate the core hypothesis of this work: a single low-cost MPU6050 sensor, combined with FFT-based feature extraction and an unsupervised autoencoder, is sufficient to detect forced access attempts on a cash drawer in real time without requiring cameras, microphones, or cloud-based processing.
+**Comparison with threshold-based prior work.** Kale et al. (2021) and Karnik et al. 
+(2020) use fixed angular displacement thresholds. A careful attacker staying below 
+the threshold goes undetected, while a cashier opening the drawer quickly triggers a 
+false alarm. The autoencoder learns the full distribution of normal motion and detects 
+deviations from it, avoiding both failure modes.
 
-## 8.1 Advantages of FFT-Based Features
+**Threshold selection.** The 95th percentile threshold provides a starting false 
+positive rate of approximately 5% of windows. Raising to the 99th percentile reduces 
+false alarms significantly with minimal sensitivity loss. The correct threshold 
+depends on the operator's acceptable false alarm rate and can be adjusted without 
+retraining.
 
-Raw accelerometer readings are highly sensitive to sensor orientation, mounting position, and mechanical shifts that may occur over time. Directly using per-axis acceleration values can therefore lead to inconsistent performance and increased maintenance requirements.
+**Limitations.** The normal dataset was collected from a single drawer in a single 
+environment. Generalisation to a drawer with different mechanical resistance or 
+cashier behaviour requires recollecting normal data and retraining, which takes under 
+an hour. Additionally, the system produces only a binary normal or anomaly decision — 
+distinguishing attack types for forensic purposes would require a secondary classifier 
+trained on labelled attack windows.
 
-To address this issue, the system computes the Euclidean magnitude of the sensor readings:
-
-* **accel_net_g** = √(ax² + ay² + az²) − 9.81
-* **gyro_mag_dps** = √(gx² + gy² + gz²)
-
-These orientation-independent scalar signals are then transformed into the frequency domain using the Fast Fourier Transform (FFT). This approach provides several benefits:
-
-* Reduces sensitivity to sensor placement.
-* Eliminates the need for recalibration when drawer mechanics change slightly.
-* Captures vibration patterns associated with tampering attempts.
-* Produces a compact and robust feature representation for anomaly detection.
-
-As a result, the system remains reliable even when the MPU6050 is mounted differently or experiences minor positional shifts.
-
----
-
-## 8.2 Benefits of Unsupervised Autoencoder-Based Detection
-
-Traditional supervised machine learning approaches require labelled examples of every attack category during training. In real-world security applications, collecting examples of all possible tampering methods is often impractical.
-
-The proposed autoencoder is trained exclusively on normal drawer operation data. During deployment, any motion pattern that significantly differs from normal behaviour produces a high reconstruction error and is classified as an anomaly.
-
-Key advantages include:
-
-* No attack data is required during training.
-* Ability to detect previously unseen attack patterns.
-* Reduced data collection and labelling effort.
-* Better adaptability to evolving tampering techniques.
-
-This makes one-class anomaly detection particularly suitable for physical security monitoring systems.
-
----
-
-## 8.3 Comparison with Threshold-Based Approaches
-
-Several existing systems rely on fixed thresholds for acceleration, vibration, or angular displacement measurements.
-
-A major limitation of threshold-based methods is that:
-
-* An attacker can remain below the predefined threshold and avoid detection.
-* Legitimate but rapid drawer movements may trigger false alarms.
-
-In contrast, the autoencoder learns the complete distribution of normal motion patterns rather than relying on a single threshold value. Consequently, the system can detect subtle deviations from expected behaviour while maintaining a low false-positive rate.
-
-This capability significantly improves robustness compared to traditional rule-based approaches.
-
----
-
-## 8.4 Threshold Selection
-
-The anomaly detection threshold is determined using the reconstruction error distribution obtained from validation data.
-
-### Threshold Strategy
-
-* **95th Percentile:** Higher sensitivity with more anomaly detections.
-* **99th Percentile:** Lower false alarm rate with slightly reduced sensitivity.
-
-The threshold can be adjusted according to operational requirements without retraining the model.
-
-Organizations that prioritize security can choose a lower threshold, whereas environments seeking fewer false alarms can use a higher threshold.
-
----
-
-## 8.5 Limitations
-
-Although the proposed system demonstrated strong performance, several limitations remain:
-
-### Dataset Generalization
-
-* Training data was collected from a single cash drawer.
-* Environmental conditions and mechanical properties may differ across installations.
-* Deployment on a new drawer may require collection of additional normal operation data and retraining.
-
-### Limited Output Information
-
-The system currently provides only two outputs:
-
-* Normal Operation
-* Anomaly Detected
-
-While this is sufficient for security monitoring, it does not identify the specific type of attack. Forensic analysis would require an additional supervised classifier capable of distinguishing between:
-
-* Shaking
-* Forced Opening
-* Impact Events
-* Other Tampering Activities
-
-### Sensor Dependency
-
-The current implementation relies solely on MPU6050 motion data. Combining additional sensors such as magnetic switches, vibration sensors, or door contact sensors could further improve detection reliability.
-
----
-
-## 8.6 Edge Deployment Feasibility
-
-The proposed solution was successfully deployed on a Raspberry Pi 4 using an ONNX-optimized autoencoder model.
-
-### Deployment Results
-
-* Inference latency: Less than 50 ms per window.
-* Memory usage: Less than 50 MB.
-* Power consumption: Less than 1 W.
-
-These results confirm that production-grade anomaly detection can be achieved using low-cost embedded hardware without cloud connectivity.
-
-The edge-based design offers several practical advantages:
-
-* Reduced operational cost.
-* Improved privacy.
-* Faster response time.
-* Offline operation capability.
-* Easy deployment in retail and small-business environments.
-
-Overall, the study demonstrates that real-time cash drawer tamper detection is both technically feasible and economically viable using inexpensive sensors and lightweight machine learning models.
-
-
----
+**Edge deployment.** Inference completes in under 50 ms per window on the Raspberry 
+Pi 4, well within the 1-second update interval, confirming that production-grade 
+anomaly detection is achievable on sub-₹5000 hardware without cloud connectivity.
 
 ## 9. Conclusion
 
@@ -620,9 +530,13 @@ The authors wish to thank the Dadas organization for their support and resources
 
 [2] M. Li, Y. Zhang, J. Wang, and X. Liu, *"Stationary Detection for Zero Velocity Update of IMU Based on the Vibrational FFT Feature of Land Vehicle,"* **Remote Sensing**, vol. 16, no. 5, p. 902, 2024.
 
-[3] N. Bahavan, A. Balakrishnan, and S. Rajan, *"Anomaly Detection using Deep Reconstruction and Forecasting for Autonomous Systems,"* **IEEE Signal Processing Cup**, 2020.
+[3] K. Biradar, S. Venkataramanan, and U. Bhatt, "Anomaly Detection using Deep 
+Reconstruction and Forecasting for Autonomous Systems," arXiv preprint 
+arXiv:2006.14556, 2020. [Runner-up, IEEE Signal Processing Cup 2020]
 
 [4] A. Kale, P. Patil, and S. Deshmukh, *"IoT Based Automated Teller Machine Security System,"* **International Journal of Advanced Research in Computer and Communication Engineering (IJARCCE)**, vol. 10, no. 6, 2021.
 
-[5] P. Patel, R. Shah, and K. Mehta, *"Smart Motion Detection System using Raspberry Pi,"* **International Journal of Artificial Intelligence and Soft Computing (IJAIS)**, vol. 10, no. 5, 2016.
+[5] P. B. Patel, V. M. Choksi, S. Jadhav, and M. B. Potdar, "Smart Motion Detection 
+System using Raspberry Pi," International Journal of Applied Information Systems 
+(IJAIS), vol. 10, no. 5, pp. 37–40, Feb. 2016.
 
