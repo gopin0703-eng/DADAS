@@ -33,7 +33,7 @@ Tampering Detection, Accelerometer, MPU6050, Autoencoder, FFT, Edge AI, IoT Secu
 ## 1. Introduction
 
 Cash drawers are critical assets in retail, banking, and hospitality sectors, often containing high-value items and cash. Despite advancements in security systems, tampering remains a persistent threat, with methods ranging from physical forced entry to sophisticated electronic attacks. Existing solutions include:
-•   CCTV Surveillance: Reactive, requires human monitoring, and may miss subtle tampering.
+• CCTV Surveillance: Reactive, requires human monitoring, and may miss subtle tampering.
 •	Magnetic/Reed Switches: Only detect open/close states, not forced entry or vibrations.
 •	RFID/Biometric Locks: Expensive and vulnerable to bypassing.
 Accelerometer-based systems offer a proactive, low-cost alternative by detecting unusual vibrations or motion patterns indicative of tampering. Prior work in road anomaly detection (e.g., pothole detection using accelerometers in vehicles) and stationary detection for IMU-based navigation demonstrates the efficacy of vibrational analysis and machine learning for anomaly detection.
@@ -82,16 +82,16 @@ The specific objectives of this research are:
 The proposed system consists of:
 1.	Sensor Layer: MPU6050 (3-axis accelerometer + gyroscope) mounted on the cash drawer.
 2.	Edge Processing Layer: Raspberry Pi 4 running: 
-o	Data Acquisition: Multi-threaded Python script with hardware interrupts for 50 Hz sampling from the MPU6050.
-o	Preprocessing: Gravity subtraction, noise filtering.
-o	Feature Extraction: Sliding-window FFT (2-second windows, 50% overlap).
-o	Anomaly Detection: Autoencoder trained on normal operation data.
+  •	Data Acquisition: Multi-threaded Python script with hardware interrupts for 50 Hz sampling from the MPU6050.
+  •	Preprocessing: Gravity subtraction, noise filtering.
+  •	Feature Extraction: Sliding-window FFT (2-second windows, 50% overlap).
+  •	Anomaly Detection: Autoencoder trained on normal operation data.
 3.	Alert Layer: Local buzzer + IoT notification (MQTT/HTTP to a central server).
 5.2 Data Collection
-•	Hardware: MPU6050 (I2C interface, 50 Hz sampling).
-•	Normal Data: 10+ hours of cash drawer operations (opening/closing, idle).
-•	Tampering Data: Simulated attacks (shaking, prying, forced opening).
-•	Dataset Size: 100,000+ samples (45–55 Hz, <5 ms jitter).
+  •	Hardware: MPU6050 (I2C interface, 50 Hz sampling).
+  •	Normal Data: 10+ hours of cash drawer operations (opening/closing, idle).
+  •	Tampering Data: Simulated attacks (shaking, prying, forced opening).
+  •	Dataset Size: 100,000+ samples (45–55 Hz, <5 ms jitter).
 
 Class	Samples	Description
 Normal Operation	80,000	Authorized opening/closing, idle
@@ -101,25 +101,25 @@ Impact	5,000	Sudden hits (e.g., hammer strikes)
 Table 1: Dataset Distribution (MPU6050 only)
 5.3 Preprocessing
 1.	Gravity Subtraction: 
-o	Compute accel_net_g = sqrt(ax² + ay² + az²)  - 9.81 (to remove static gravity from MPU6050 data).
+  •	Compute accel_net_g = sqrt(ax² + ay² + az²)  - 9.81 (to remove static gravity from MPU6050 data).
 2.	Gyroscope Magnitude: 
-o	Compute gyro_mag_dps = sqrt(gx² + gy² + gz²) from MPU6050 gyroscope data.
+  •	Compute gyro_mag_dps = sqrt(gx² + gy² + gz²) from MPU6050 gyroscope data.
 3.	Noise Filtering: 
-o	Apply a low-pass filter (5 Hz cutoff) to remove high-frequency noise from MPU6050 readings.
+  •	Apply a low-pass filter (5 Hz cutoff) to remove high-frequency noise from MPU6050 readings.
 5.4 Feature Extraction
-•	Sliding Window FFT: 
-o	Window size: 100 samples (2 sec @ 50 Hz) from MPU6050.
-o	Overlap: 50% (for smooth transitions).
-o	Hann window applied before FFT to reduce spectral leakage.
-o	Features: Magnitude bins (0–25 Hz) for accel_net_g and gyro_mag_dps from MPU6050.
+  • Sliding Window FFT: 
+  •	Window size: 100 samples (2 sec @ 50 Hz) from MPU6050.
+  •	Overlap: 50% (for smooth transitions).
+  •	Hann window applied before FFT to reduce spectral leakage.
+  •	Features: Magnitude bins (0–25 Hz) for accel_net_g and gyro_mag_dps from MPU6050.
 5.5 Anomaly Detection Model
 5.5.1 Autoencoder Architecture
 •	Input: 25-dimensional FFT features (from accel_net_g and gyro_mag_dps of MPU6050).
 •	Encoder: 
-o	Dense (25 → 16 → 8) with ReLU activation.
+  >	Dense (25 → 16 → 8) with ReLU activation.
 •	Bottleneck: 8 neurons (compressed representation).
 •	Decoder: 
-o	Dense (8 → 16 → 25) with ReLU activation.
+  >	Dense (8 → 16 → 25) with ReLU activation.
 •	Loss Function: Mean Squared Error (MSE).
 •	Optimizer: Adam (lr=0.001).
 Training:
@@ -130,8 +130,8 @@ Training:
 •	Reconstruction Error (RE): 
 RE = MSE(original_input, reconstructed_output)
 •	Threshold: 
-o	Set at 95th percentile of RE on validation data from MPU6050.
-o	If RE > threshold → Anomaly Detected.
+  >	Set at 95th percentile of RE on validation data from MPU6050.
+  >	If RE > threshold → Anomaly Detected.
 5.6 Edge Deployment
 •	Model Export: Trained autoencoder converted to ONNX format for edge deployment on Raspberry Pi.
 •	Inference Pipeline: 
@@ -146,21 +146,21 @@ o	If RE > threshold → Anomaly Detected.
 5.7 Alert System
 •	Local Alert: Buzzer + LED (immediate feedback).
 •	Remote Alert: 
-o	MQTT/HTTP POST to a central server.
-o	Mobile Notification (via Firebase/Telegram bot).
+  >	MQTT/HTTP POST to a central server.
+  >	Mobile Notification (via Firebase/Telegram bot).
 
 
 ## 6. Implementation
 
 6.1 Hardware Setup
 •	MPU6050 Pinout: 
-o	VCC: 3.3V
-o	GND: GND
-o	SCL: GPIO 3 (RPi)
-o	SDA: GPIO 2 (RPi)
+  >	VCC: 3.3V
+  >	GND: GND
+  >	SCL: GPIO 3 (RPi)
+  >	SDA: GPIO 2 (RPi)
 •	Raspberry Pi Configuration: 
-o	Enable I2C (sudo raspi-config → Interface Options → I2C).
-o	Install dependencies: pip install smbus numpy scipy tensorflow keras onnxruntime.
+  >	Enable I2C (sudo raspi-config → Interface Options → I2C).
+  >	Install dependencies: pip install smbus numpy scipy tensorflow keras onnxruntime.
 6.2 Data Acquisition
 •	Multi-threaded Python script with hardware interrupts for 50 Hz sampling from MPU6050.
 •	Dataset: 100,000+ samples collected from normal and tampering scenarios using only MPU6050.
