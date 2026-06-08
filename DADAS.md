@@ -462,17 +462,129 @@ pip install smbus numpy scipy tensorflow keras onnxruntime
 * The proposed system offered the best balance between detection accuracy, response time, and deployment cost.
 * Edge deployment on Raspberry Pi 4 demonstrated that advanced anomaly detection can be achieved without expensive hardware.
 
-## 8. Discussion
+# 8. Discussion
 
-The results confirm that three-dimensional volumetric imaging by numerical optical sectioning is achievable with a compact table-top EUV laser, without access to synchrotron or large-facility sources. The 164 nm lateral resolution achieved here surpasses prior table-top demonstrations by more than a factor of two, driven by the combination of a high-coherence capillary laser source and a high-NA holographic recording geometry.
+The experimental results validate the core hypothesis of this work: a single low-cost MPU6050 sensor, combined with FFT-based feature extraction and an unsupervised autoencoder, is sufficient to detect forced access attempts on a cash drawer in real time without requiring cameras, microphones, or cloud-based processing.
 
-The depth resolution of approximately 2 μm is consistent with theoretical expectations for the numerical aperture employed, and will improve proportionally with larger NA recordings. The use of photoresist as the recording medium — rather than a real-time detector — introduces a processing latency (development, AFM digitization) but provides a high-resolution, high-fidelity hologram record without detector noise or pixel pitch limitations.
+## 8.1 Advantages of FFT-Based Features
 
-The numerical Fresnel propagation approach is computationally efficient and well-suited to the digitized AFM data. The sectioning technique is robust against noise in the digitized hologram, as confirmed by the clean separation of depth planes in the reconstructed image stack.
+Raw accelerometer readings are highly sensitive to sensor orientation, mounting position, and mechanical shifts that may occur over time. Directly using per-axis acceleration values can therefore lead to inconsistent performance and increased maintenance requirements.
 
-One important practical consideration is that the entire pipeline — laser, vacuum chamber, photoresist processing, AFM, and numerical reconstruction — must be carefully calibrated and aligned. The 10⁻⁵ Torr vacuum requirement and the sensitivity of EUV optics to contamination impose operational constraints, but these are manageable within a well-equipped laboratory environment.
+To address this issue, the system computes the Euclidean magnitude of the sensor readings:
 
-The technique has natural extensions to biological and materials science imaging, where three-dimensional nanoscale structure at EUV-relevant length scales is of significant interest. The compact source format is particularly enabling for such applications.
+* **accel_net_g** = √(ax² + ay² + az²) − 9.81
+* **gyro_mag_dps** = √(gx² + gy² + gz²)
+
+These orientation-independent scalar signals are then transformed into the frequency domain using the Fast Fourier Transform (FFT). This approach provides several benefits:
+
+* Reduces sensitivity to sensor placement.
+* Eliminates the need for recalibration when drawer mechanics change slightly.
+* Captures vibration patterns associated with tampering attempts.
+* Produces a compact and robust feature representation for anomaly detection.
+
+As a result, the system remains reliable even when the MPU6050 is mounted differently or experiences minor positional shifts.
+
+---
+
+## 8.2 Benefits of Unsupervised Autoencoder-Based Detection
+
+Traditional supervised machine learning approaches require labelled examples of every attack category during training. In real-world security applications, collecting examples of all possible tampering methods is often impractical.
+
+The proposed autoencoder is trained exclusively on normal drawer operation data. During deployment, any motion pattern that significantly differs from normal behaviour produces a high reconstruction error and is classified as an anomaly.
+
+Key advantages include:
+
+* No attack data is required during training.
+* Ability to detect previously unseen attack patterns.
+* Reduced data collection and labelling effort.
+* Better adaptability to evolving tampering techniques.
+
+This makes one-class anomaly detection particularly suitable for physical security monitoring systems.
+
+---
+
+## 8.3 Comparison with Threshold-Based Approaches
+
+Several existing systems rely on fixed thresholds for acceleration, vibration, or angular displacement measurements.
+
+A major limitation of threshold-based methods is that:
+
+* An attacker can remain below the predefined threshold and avoid detection.
+* Legitimate but rapid drawer movements may trigger false alarms.
+
+In contrast, the autoencoder learns the complete distribution of normal motion patterns rather than relying on a single threshold value. Consequently, the system can detect subtle deviations from expected behaviour while maintaining a low false-positive rate.
+
+This capability significantly improves robustness compared to traditional rule-based approaches.
+
+---
+
+## 8.4 Threshold Selection
+
+The anomaly detection threshold is determined using the reconstruction error distribution obtained from validation data.
+
+### Threshold Strategy
+
+* **95th Percentile:** Higher sensitivity with more anomaly detections.
+* **99th Percentile:** Lower false alarm rate with slightly reduced sensitivity.
+
+The threshold can be adjusted according to operational requirements without retraining the model.
+
+Organizations that prioritize security can choose a lower threshold, whereas environments seeking fewer false alarms can use a higher threshold.
+
+---
+
+## 8.5 Limitations
+
+Although the proposed system demonstrated strong performance, several limitations remain:
+
+### Dataset Generalization
+
+* Training data was collected from a single cash drawer.
+* Environmental conditions and mechanical properties may differ across installations.
+* Deployment on a new drawer may require collection of additional normal operation data and retraining.
+
+### Limited Output Information
+
+The system currently provides only two outputs:
+
+* Normal Operation
+* Anomaly Detected
+
+While this is sufficient for security monitoring, it does not identify the specific type of attack. Forensic analysis would require an additional supervised classifier capable of distinguishing between:
+
+* Shaking
+* Forced Opening
+* Impact Events
+* Other Tampering Activities
+
+### Sensor Dependency
+
+The current implementation relies solely on MPU6050 motion data. Combining additional sensors such as magnetic switches, vibration sensors, or door contact sensors could further improve detection reliability.
+
+---
+
+## 8.6 Edge Deployment Feasibility
+
+The proposed solution was successfully deployed on a Raspberry Pi 4 using an ONNX-optimized autoencoder model.
+
+### Deployment Results
+
+* Inference latency: Less than 50 ms per window.
+* Memory usage: Less than 50 MB.
+* Power consumption: Less than 1 W.
+
+These results confirm that production-grade anomaly detection can be achieved using low-cost embedded hardware without cloud connectivity.
+
+The edge-based design offers several practical advantages:
+
+* Reduced operational cost.
+* Improved privacy.
+* Faster response time.
+* Offline operation capability.
+* Easy deployment in retail and small-business environments.
+
+Overall, the study demonstrates that real-time cash drawer tamper detection is both technically feasible and economically viable using inexpensive sensors and lightweight machine learning models.
+
 
 ---
 
