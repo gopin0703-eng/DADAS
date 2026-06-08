@@ -242,30 +242,127 @@ RE = MSE(original_input, reconstructed_output)
 
 
 
-## 6. Implementation
+# 6. Implementation
 
-6.1 Hardware Setup
-•	MPU6050 Pinout: 
-  >	VCC: 3.3V
-  >	GND: GND
-  >	SCL: GPIO 3 (RPi)
-  >	SDA: GPIO 2 (RPi)
-•	Raspberry Pi Configuration: 
-  >	Enable I2C (sudo raspi-config → Interface Options → I2C).
-  >	Install dependencies: pip install smbus numpy scipy tensorflow keras onnxruntime.
-6.2 Data Acquisition
-•	Multi-threaded Python script with hardware interrupts for 50 Hz sampling from MPU6050.
-•	Dataset: 100,000+ samples collected from normal and tampering scenarios using only MPU6050.
-6.3 Preprocessing and Feature Extraction
-•	Gravity subtraction, noise filtering, and sliding-window FFT applied to raw accelerometer data from MPU6050.
-•	Features: 25-dimensional FFT magnitude bins (0–25 Hz).
-6.4 Model Training
-•	Autoencoder trained on normal operation data (80,000 samples from MPU6050).
-•	Validation: 10,000 samples (10% of normal data).
-•	Threshold: Set at 95th percentile of reconstruction error on validation data.
-6.5 Edge Deployment
-•	ONNX-optimized model deployed on Raspberry Pi.
-•	Inference Pipeline: Real-time processing of MPU6050 data with <50 ms latency.
+## 6.1 Hardware Setup
+
+### MPU6050 Pin Connections
+
+| MPU6050 Pin | Raspberry Pi Connection |
+| ----------- | ----------------------- |
+| VCC         | 3.3V                    |
+| GND         | GND                     |
+| SCL         | GPIO 3 (I2C Clock)      |
+| SDA         | GPIO 2 (I2C Data)       |
+
+### Raspberry Pi Configuration
+
+1. Enable I2C communication:
+
+```bash
+sudo raspi-config
+```
+
+Navigate to:
+
+```text
+Interface Options → I2C → Enable
+```
+
+2. Install required dependencies:
+
+```bash
+pip install smbus numpy scipy tensorflow keras onnxruntime
+```
+
+---
+
+## 6.2 Data Acquisition
+
+### Data Collection Process
+
+* Multi-threaded Python script used for continuous sensor monitoring.
+* Hardware interrupts employed to maintain stable sampling.
+* Sampling rate set to 50 Hz using the MPU6050 sensor.
+
+### Dataset Summary
+
+* Total dataset size: More than 100,000 samples.
+* Data collected from both normal and tampering scenarios.
+* Sensor used: MPU6050 accelerometer and gyroscope.
+
+---
+
+## 6.3 Preprocessing and Feature Extraction
+
+### Preprocessing Steps
+
+* Gravity subtraction applied to accelerometer readings.
+* Low-pass noise filtering performed to remove unwanted signal components.
+* Sensor data normalized before feature extraction.
+
+### Feature Extraction
+
+* Sliding-window Fast Fourier Transform (FFT) applied to preprocessed data.
+* Window size: 100 samples (2 seconds at 50 Hz).
+* Overlap: 50%.
+* Hann window applied before FFT to reduce spectral leakage.
+
+### Extracted Features
+
+* FFT magnitude bins covering the frequency range 0–25 Hz.
+* Combined feature vector generated from accelerometer and gyroscope signals.
+* Final feature vector used as input to the anomaly detection model.
+
+---
+
+## 6.4 Model Training
+
+### Training Dataset
+
+* Normal operation data: 80,000 samples.
+* Validation data: 10,000 samples (10% of normal operation data).
+
+### Autoencoder Configuration
+
+* Input: FFT-based feature vectors.
+* Loss Function: Mean Squared Error (MSE).
+* Optimizer: Adam.
+* Learning Rate: 0.001.
+* Batch Size: 32.
+* Epochs: 100 with early stopping.
+
+### Threshold Selection
+
+* Reconstruction error calculated on validation data.
+* Anomaly threshold set at the 95th percentile of reconstruction errors.
+* Samples exceeding the threshold are classified as anomalies.
+
+---
+
+## 6.5 Edge Deployment
+
+### Model Optimization
+
+* Trained autoencoder exported to ONNX format.
+* ONNX Runtime used for efficient inference on Raspberry Pi.
+
+### Real-Time Inference Pipeline
+
+1. Read sensor data from MPU6050.
+2. Apply preprocessing techniques.
+3. Extract FFT features.
+4. Perform autoencoder inference.
+5. Calculate reconstruction error.
+6. Compare reconstruction error with the anomaly threshold.
+7. Trigger an alert if an anomaly is detected.
+
+### Performance
+
+* Real-time processing of MPU6050 sensor data.
+* End-to-end inference latency less than 50 ms.
+* Suitable for continuous monitoring and tamper detection applications.
+
 
 
 ---
