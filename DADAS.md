@@ -8,35 +8,63 @@
 
 ---
 
-# {{Drawer Anomaly Detection Alert System}}
+# Drawer Anomaly Detection Alert System
 
-<div align="center">
-
-**Deemanth**, Dept of Computer Science, USN &nbsp;·&nbsp; **Gopinath G**, Dept of Computer Applications, USN &nbsp;·&nbsp;**Yashvanth S Nayak**, Dept of Computer Applications, USN &nbsp;·&nbsp; **Franklin Rohith F**, Dept of Computer Applications, USN &nbsp;·&nbsp; 
+**Deemanth S**, Department of Computer Science, 
+**Gopinath G**, Department of Computer Applications, 
+**Yashvanth S Nayak**, Department of Computer Applications, 
+**Franklin Rohith F**, Department of Computer Applications, 
 
 </div>
 
 ---
 
-## Abstract
+# Abstract
 
-Cash drawers in retail and banking environments are vulnerable to tampering, theft, and unauthorized access. Traditional security measures like CCTV cameras and manual inspections are reactive and often fail to detect subtle or rapid tampering attempts. This paper presents a low-cost, real-time tampering detection system using only an MPU6050 accelerometer sensor and a Raspberry Pi. The system leverages Fast Fourier Transform (FFT) for vibrational analysis and a deep autoencoder to distinguish between normal operations (e.g., opening/closing) and anomalous events (e.g., forced entry, shaking, or prying). Experimental results demonstrate >95% detection accuracy with minimal false positives, making it suitable for deployment in resource-constrained environments. The solution is edge-ready, running on a Raspberry Pi with ONNX-optimized inference for low-latency alerts.
+Cash drawers used in retail, banking, and hospitality environments are vulnerable to tampering, theft, and unauthorized access. Traditional security solutions such as CCTV surveillance and manual inspections are primarily reactive and often fail to detect subtle or rapid tampering attempts in real time. This paper presents a low-cost, edge-based tampering detection system that utilizes an MPU6050 inertial measurement sensor and a Raspberry Pi for continuous monitoring of cash drawer activity.
+
+The proposed system employs Fast Fourier Transform (FFT) for vibration-based feature extraction and an unsupervised autoencoder for anomaly detection. Motion data collected from the accelerometer and gyroscope is processed to learn normal drawer operation patterns, including authorized opening, closing, and idle states. Deviations from these learned patterns, such as forced opening, shaking, prying, or impact events, are identified through reconstruction error analysis.
+
+Experimental evaluation on a dataset containing more than 100,000 sensor samples demonstrates an average detection accuracy exceeding 95% with a false positive rate below 2%. The trained autoencoder is optimized and deployed on a Raspberry Pi using the ONNX Runtime, enabling real-time inference with latency below 50 ms per detection window. The proposed solution operates entirely at the edge without requiring cameras, microphones, or cloud connectivity, making it suitable for privacy-sensitive and resource-constrained environments. The results demonstrate that low-cost inertial sensing combined with lightweight machine learning provides an effective and scalable approach for real-time cash drawer tampering detection.
+
 
 ---
 
 ## Keywords
 
-Tampering Detection, Accelerometer, MPU6050, Autoencoder, FFT, Edge AI, IoT Security, Anomaly Detection, Machine Learning, Raspberry Pi.
+**Tampering Detection, Accelerometer, MPU6050, Autoencoder, Fast Fourier Transform (FFT), Edge AI, IoT Security, Anomaly Detection, Machine Learning, Raspberry Pi.**
 
 ---
 
-## 1. Introduction
+# 1. Introduction
 
-Cash drawers are critical assets in retail, banking, and hospitality sectors, often containing high-value items and cash. Despite advancements in security systems, tampering remains a persistent threat, with methods ranging from physical forced entry to sophisticated electronic attacks. Existing solutions include:
-• CCTV Surveillance: Reactive, requires human monitoring, and may miss subtle tampering.
-•	Magnetic/Reed Switches: Only detect open/close states, not forced entry or vibrations.
-•	RFID/Biometric Locks: Expensive and vulnerable to bypassing.
-Accelerometer-based systems offer a proactive, low-cost alternative by detecting unusual vibrations or motion patterns indicative of tampering. Prior work in road anomaly detection (e.g., pothole detection using accelerometers in vehicles) and stationary detection for IMU-based navigation demonstrates the efficacy of vibrational analysis and machine learning for anomaly detection.
+Cash drawers are critical assets in the retail, banking, and hospitality sectors, often containing cash and other high-value items. Despite advancements in security technologies, tampering and unauthorized access remain persistent threats. Common attack methods range from physical forced entry and vibration-based attacks to more sophisticated electronic bypass techniques.
+
+Existing cash drawer security solutions have several limitations:
+
+### CCTV Surveillance
+
+* Primarily reactive rather than preventive.
+* Requires continuous human monitoring or post-event analysis.
+* May fail to detect subtle tampering attempts before unauthorized access occurs.
+
+### Magnetic/Reed Switches
+
+* Detect only open and closed states.
+* Unable to identify forced entry attempts, vibrations, or abnormal motion patterns.
+* Provide limited information regarding the nature of an attack.
+
+### RFID and Biometric Locks
+
+* More secure than conventional locking mechanisms.
+* Expensive to deploy and maintain.
+* Can still be vulnerable to bypass techniques and hardware failures.
+
+To overcome these limitations, accelerometer-based monitoring systems provide a proactive and cost-effective alternative. By continuously measuring motion and vibration patterns, these systems can identify abnormal activities that may indicate tampering or unauthorized access attempts.
+
+Previous research in related domains has demonstrated the effectiveness of vibration-based anomaly detection. Studies on road surface anomaly detection using low-cost accelerometers have shown that machine learning models can accurately identify unusual vibration patterns. Similarly, stationary detection techniques for inertial measurement units (IMUs) have successfully utilized Fast Fourier Transform (FFT) analysis and motion-based features to distinguish between different movement states.
+
+Inspired by these approaches, the proposed system employs an MPU6050 accelerometer and gyroscope sensor mounted on a cash drawer. Motion data is processed using FFT-based feature extraction and analyzed using an unsupervised autoencoder model. The system learns normal drawer operation patterns and detects deviations in real time, enabling reliable tamper detection without requiring cameras, microphones, or cloud-based processing.
 
 
 ---
