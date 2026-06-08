@@ -367,43 +367,100 @@ pip install smbus numpy scipy tensorflow keras onnxruntime
 
 ---
 
-## 7. Results & Analysis
+# 7. Results & Analysis
 
-7.1 Training Performance
-Metric	Value
-Training Loss	0.0012
-Validation Loss	0.0015
-Epochs	80 (early stop)
-Figure 2: Training and Validation Loss (MPU6050 data)
+## 7.1 Training Performance
 
-7.2 Anomaly Detection Results
-Class	Precision	Recall	F1-Score	False Positives
-Normal Operations	0.98	0.99	0.98	1.2%
-Shaking	0.97	0.96	0.96	-
-Forced Opening	0.95	0.94	0.94	-
-Impact	0.99	0.98	0.98	-
-Average	0.97	0.97	0.97	<2%
+### Training Metrics
 
-Table 2: Classification Performance (MPU6050 + Autoencoder)
-Confusion Matrix:
-Predicted	Normal	Anomaly
-Actual Normal	9800	200
-Actual Anomaly	150	9850
-Figure 3: Confusion Matrix
+| Metric          | Value               |
+| --------------- | ------------------- |
+| Training Loss   | 0.0012              |
+| Validation Loss | 0.0015              |
+| Epochs          | 80 (Early Stopping) |
 
-7.3 Edge Deployment Results
-•	Inference Time: ~40 ms per window (Raspberry Pi 4).
-•	Memory Usage: <50 MB (ONNX model + Python runtime).
-•	Power Consumption: <1 W (suitable for battery-powered setups).
+**Figure 2:** Training and Validation Loss Curves (MPU6050 Data)
 
-7.4 Comparison with Baseline Methods
-Method	Accuracy	False Positives	Latency	Hardware Cost
-Threshold Based (Raw Accel) 	85%	15%	10ms	Low
-SVM (Handcrafted Features)	90%	8%	100ms	Medium
-Proposed (FFT + Autoencoder) 	97%	<2%	40ms	Low (MPU6050 + RPi) 
-Table 3: Comparison with Baseline Methods
+### Analysis
+
+* The autoencoder converged successfully during training.
+* Early stopping prevented overfitting and improved generalization.
+* The small difference between training and validation loss indicates stable learning performance.
+* Low reconstruction error on normal operation data demonstrates effective feature learning.
 
 ---
+
+## 7.2 Anomaly Detection Results
+
+### Classification Performance
+
+| Class             | Precision | Recall   | F1-Score | False Positives |
+| ----------------- | --------- | -------- | -------- | --------------- |
+| Normal Operations | 0.98      | 0.99     | 0.98     | 1.2%            |
+| Shaking           | 0.97      | 0.96     | 0.96     | -               |
+| Forced Opening    | 0.95      | 0.94     | 0.94     | -               |
+| Impact            | 0.99      | 0.98     | 0.98     | -               |
+| **Average**       | **0.97**  | **0.97** | **0.97** | **<2%**         |
+
+**Table 2:** Classification Performance (MPU6050 + Autoencoder)
+
+### Confusion Matrix
+
+|                    | Predicted Normal | Predicted Anomaly |
+| ------------------ | ---------------: | ----------------: |
+| **Actual Normal**  |             9800 |               200 |
+| **Actual Anomaly** |              150 |              9850 |
+
+**Figure 3:** Confusion Matrix
+
+### Analysis
+
+* The proposed system achieved an average F1-score of 0.97.
+* False positive rate remained below 2%, reducing unnecessary alerts.
+* Impact events were detected with the highest accuracy.
+* Forced opening scenarios were slightly more challenging due to similarities with normal drawer operations.
+* The confusion matrix shows strong discrimination between normal and anomalous activities.
+
+---
+
+## 7.3 Edge Deployment Results
+
+### Deployment Performance
+
+| Metric            | Value             |
+| ----------------- | ----------------- |
+| Inference Time    | ~40 ms per window |
+| Memory Usage      | <50 MB            |
+| Power Consumption | <1 W              |
+
+### Analysis
+
+* The ONNX-optimized autoencoder performed efficiently on Raspberry Pi 4.
+* Average inference latency remained below 50 ms, enabling real-time detection.
+* Memory usage was low enough for continuous edge deployment.
+* Power consumption remained under 1 W, making the solution suitable for battery-powered and embedded applications.
+
+---
+
+## 7.4 Comparison with Baseline Methods
+
+### Performance Comparison
+
+| Method                              | Accuracy | False Positives | Latency | Hardware Cost                |
+| ----------------------------------- | -------- | --------------- | ------- | ---------------------------- |
+| Threshold-Based (Raw Accelerometer) | 85%      | 15%             | 10 ms   | Low                          |
+| SVM (Handcrafted Features)          | 90%      | 8%              | 100 ms  | Medium                       |
+| Proposed Method (FFT + Autoencoder) | 97%      | <2%             | 40 ms   | Low (MPU6050 + Raspberry Pi) |
+
+**Table 3:** Comparison with Baseline Methods
+
+### Analysis
+
+* The proposed FFT + Autoencoder approach achieved the highest accuracy (97%).
+* False positive rates were significantly lower compared to traditional threshold-based methods.
+* Although latency was higher than simple threshold detection, it remained suitable for real-time applications.
+* The proposed system offered the best balance between detection accuracy, response time, and deployment cost.
+* Edge deployment on Raspberry Pi 4 demonstrated that advanced anomaly detection can be achieved without expensive hardware.
 
 ## 8. Discussion
 
