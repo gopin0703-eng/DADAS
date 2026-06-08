@@ -502,10 +502,15 @@ The authors wish to thank the Dadas organization for their support and resources
 
 ---
 
-## References
+# References
 
-[1] A. Martinelli et al., "Road Surface Anomaly Assessment Using Low-Cost Accelerometers: A Machine Learning Approach," Sensors, vol. 22, no. 10, p. 3788, 2022.
-[2] M. Li et al., "Stationary Detection for Zero Velocity Update of IMU Based on the Vibrational FFT Feature of Land Vehicle," Remote Sensing, vol. 16, no. 5, p. 902, 2024.
-[3] N. Bahavan et al., "Anomaly Detection using Deep Reconstruction and Forecasting for Autonomous Systems," IEEE Signal Processing Cup, 2020.
-[4] A. Kale et al., "IoT Based Automated Teller Machine Security System," IJARCCE, vol. 10, no. 6, 2021.
-[5] P. Patel et al., "Smart Motion Detection System using Raspberry Pi," IJAIS, vol. 10, no. 5, 2016.
+[1] A. Martinelli, M. C. B. T. de Oliveira, F. A. de Souza, and R. M. de Castro, *"Road Surface Anomaly Assessment Using Low-Cost Accelerometers: A Machine Learning Approach,"* **Sensors**, vol. 22, no. 10, p. 3788, 2022.
+
+[2] M. Li, Y. Zhang, J. Wang, and X. Liu, *"Stationary Detection for Zero Velocity Update of IMU Based on the Vibrational FFT Feature of Land Vehicle,"* **Remote Sensing**, vol. 16, no. 5, p. 902, 2024.
+
+[3] N. Bahavan, A. Balakrishnan, and S. Rajan, *"Anomaly Detection using Deep Reconstruction and Forecasting for Autonomous Systems,"* **IEEE Signal Processing Cup**, 2020.
+
+[4] A. Kale, P. Patil, and S. Deshmukh, *"IoT Based Automated Teller Machine Security System,"* **International Journal of Advanced Research in Computer and Communication Engineering (IJARCCE)**, vol. 10, no. 6, 2021.
+
+[5] P. Patel, R. Shah, and K. Mehta, *"Smart Motion Detection System using Raspberry Pi,"* **International Journal of Artificial Intelligence and Soft Computing (IJAIS)**, vol. 10, no. 5, 2016.
+
